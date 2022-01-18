@@ -1,4 +1,6 @@
-﻿using RSS.Model;
+﻿using Microsoft.AppCenter.Analytics;
+using Microsoft.AppCenter.Crashes;
+using RSS.Model;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -26,16 +28,36 @@ namespace RSS.ViewModel
 
         public void ReadRss()
         {
-            XmlSerializer serializer = new XmlSerializer(typeof(Posts));
-
-            using (WebClient client = new WebClient())
+            try
             {
-                string xml = Encoding.Default.GetString(client.DownloadData("https://cointelegraph.com/rss"));
-                using (Stream reader = new MemoryStream(Encoding.UTF8.GetBytes(xml)))
+                XmlSerializer serializer = new XmlSerializer(typeof(Posts));
+
+                using (WebClient client = new WebClient())
                 {
-                    Blog = (Posts)serializer.Deserialize(reader);
+                    string xml = Encoding.Default.GetString(client.DownloadData("https://cointelegraph.com/rss"));
+                    using (Stream reader = new MemoryStream(Encoding.UTF8.GetBytes(xml)))
+                    {
+                        Blog = (Posts)serializer.Deserialize(reader);
+                    }
                 }
+
+                // analytics          
+                var properties = new Dictionary<string, string>
+                {
+                    {"Initial_Page",$"{Blog}" }
+                };
+                Analytics.TrackEvent("Fetching_Blog_List", properties);
             }
+            catch (Exception ex)
+            {
+
+                var properties = new Dictionary<string, string>
+                {
+                    {"Blo_Post","Error occured" }
+                };
+                Crashes.TrackError(ex, properties);
+            }
+           
         }
 
         private void OnPropertyChanged(string propertyName)
